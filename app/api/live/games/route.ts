@@ -25,7 +25,7 @@ export async function GET() {
   try {
     // Load live games from DB and also include any games currently in the watch set
     const dbLive = await db.select().from(games).where(eq(games.status, 'live'));
-    const watchIds = await redis.smembers<string>(keys.watchSet).catch(() => [] as string[]);
+    const watchIds = await redis.smembers<string[]>(keys.watchSet).catch(() => [] as string[]);
     const extraByWatch = watchIds.length > 0
       ? await db.select().from(games).where(inArray(games.eventId, watchIds))
       : [] as typeof dbLive;

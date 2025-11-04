@@ -9,7 +9,7 @@ export async function updateLivePossession(): Promise<{ updated: number; checked
   // Build the set of eventIds we care about: DB live + watch set
   const [dbLive, watchIds] = await Promise.all([
     db.select().from(games).where(eq(games.status, 'live')),
-    redis.smembers<string>(keys.watchSet).catch(() => [] as string[]),
+    redis.smembers<string[]>(keys.watchSet).catch(() => [] as string[]),
   ]);
   const targets = new Set<string>();
   for (const g of dbLive) targets.add(g.eventId);
