@@ -10,8 +10,8 @@ A Next.js 14 (App Router) TypeScript service providing APIs and an admin UI for 
 - **Hosting**: Vercel (with Cron Jobs)
 
 ## Features
-- Live scanning of events and in-zone calculations
-- Scheduled seeding and refresh of game schedules (via Vercel Cron)
+- In-zone calculations and live possession updates
+- Scheduled seeding of game schedules with DB-driven lookbacks (via Vercel Cron)
 - Admin UI under `/admin` protected by Basic Auth
 - Typed environment validation with Zod
 
@@ -66,10 +66,11 @@ npm run db:push
 ```
 
 ### Seed Schedules (optional for local dev)
-Use the Admin UI or a direct request to add upcoming games to the database.
+Seeds next 7 days and performs DB-driven lookbacks for all days before today (updates existing rows only) and removes finals. In production, this runs daily at 09:00 UTC via Vercel Cron.
+Use the Admin UI or a direct request to add/update games in the database.
 
 ```bash
-# via Admin UI: visit /admin and click "Seed Games"
+# via Admin UI: visit /admin and click "Refresh Games"
 
 # or via HTTP directly:
 curl -X POST http://localhost:3000/api/schedule/seed
@@ -105,15 +106,12 @@ npm start
 ## API Routes
 All routes are under `app/api`:
 
-- `GET /api/status` — Service status/health
 - `GET /api/live/games` — Current live games, possession, and teams not in game
 - `POST /api/live/possession` — Poll ESPN and update possession for live games
 - `POST /api/player-status` — Given player IDs, return per-player status
 - `POST /api/live/summary` — Given player names or IDs, return relevant live games and in-zone status
 - `GET /api/teams/:teamId/players` — Team roster grouped by side of ball
-- `POST /api/schedule/seed` — Seed schedules (cron)
-- `POST /api/schedule/refresh` — Refresh schedules (cron daily)
-- `POST /api/live/scan` — Trigger live scan (cron minutely)
+- `POST /api/schedule/seed` — Seed/refresh schedules (cron)
 - `GET /api/watch` — Watch window data for a specific `eventId`
 
 Route handlers live in `app/api/**/route.ts`.
@@ -236,9 +234,8 @@ Defined in `vercel.json`:
 ```json
 {
   "crons": [
-    { "path": "/api/schedule/seed", "schedule": "0 9 * * MON" },
-    { "path": "/api/schedule/refresh", "schedule": "0 9 * * *" },
-    { "path": "/api/live/scan", "schedule": "*/1 * * * *" }
+    { "path": "/api/schedule/seed", "schedule": "0 9 * * *" },
+    
   ]
 }
 ```
@@ -250,9 +247,8 @@ In Vercel, ensure Cron Jobs are enabled for the project.
 app/
   admin/                 # Admin UI (Basic Auth protected)
   api/
-    live/                # live scan + in-zone
+    live/                # live endpoints
     schedule/            # seed + refresh
-    status/              # status endpoint
     watch/               # watch window
 lib/
   db/                    # Drizzle + Neon setup and schema

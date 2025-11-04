@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { computeGlobalStatus } from '@/lib/status';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db/drizzle';
@@ -9,7 +8,6 @@ import { games } from '@/lib/db/schema';
 import { ControlsClient } from './ControlsClient';
 import { EventsTableClient } from './EventsTableClient';
 import { AdminTabsClient } from './AdminTabsClient';
-import { getDiscoState } from '@/lib/disco';
 
 async function trigger(path: string) {
   'use server';
@@ -22,7 +20,6 @@ async function trigger(path: string) {
 }
 
 export default async function AdminPage() {
-  const status = await computeGlobalStatus();
   const rows = await db.select().from(games);
   const eventRows = rows.map((r) => {
     const home = r.homeTeam as any;
@@ -39,14 +36,8 @@ export default async function AdminPage() {
   return (
     <main className="stack">
       <div className="grid">
-        <div className="card" style={{ gridColumn: 'span 6' }}>
-          <h2>Status</h2>
-          <pre className="code">{JSON.stringify(status, null, 2)}</pre>
-        </div>
         <ControlsClient
           seed={async (_prev, _fd) => { 'use server'; await trigger('/api/schedule/seed'); return 'Added next 7 days of Games to database'; }}
-          refresh={async (_prev, _fd) => { 'use server'; await trigger('/api/schedule/refresh'); return 'Refreshed T-48h/T-12h/T-3h Games in database'; }}
-          scan={async (_prev, _fd) => { 'use server'; await trigger('/api/live/scan'); return 'Scanned database Games for latest ESPN summary and PBPs'; }}
           disco={async (_prev, _fd) => {
             'use server';
             const h = headers();

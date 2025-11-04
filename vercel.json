@@ -1,8 +1,7 @@
 {
   "crons": [
-    { "path": "/api/schedule/seed", "schedule": "0 9 * * MON" },
-    { "path": "/api/schedule/refresh", "schedule": "0 9 * * *" },
-    { "path": "/api/live/scan", "schedule": "*/1 * * * *" }
+    { "path": "/api/schedule/seed", "schedule": "0 9 * * *" },
+    
   ]
 }
 

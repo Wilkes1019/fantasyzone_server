@@ -29,10 +29,8 @@ function DiscoButton({ label, active, cooldown }: { label: string; active: boole
   );
 }
 
-export function ControlsClient({ seed, refresh, scan, disco }: { seed: ServerAction; refresh: ServerAction; scan: ServerAction; disco: ServerAction }) {
+export function ControlsClient({ seed, disco }: { seed: ServerAction; disco: ServerAction }) {
   const [seedMsg, seedAction] = useFormState(seed, '');
-  const [refreshMsg, refreshAction] = useFormState(refresh, '');
-  const [scanMsg, scanAction] = useFormState(scan, '');
   const [discoMsg, discoAction] = useFormState(disco, '');
 
   const [logs, setLogs] = useState<Array<{ t: number; msg: string }>>([]);
@@ -43,12 +41,7 @@ export function ControlsClient({ seed, refresh, scan, disco }: { seed: ServerAct
   useEffect(() => {
     if (seedMsg) setLogs((prev) => [{ t: Date.now(), msg: seedMsg }, ...prev].slice(0, 8));
   }, [seedMsg]);
-  useEffect(() => {
-    if (refreshMsg) setLogs((prev) => [{ t: Date.now(), msg: refreshMsg }, ...prev].slice(0, 8));
-  }, [refreshMsg]);
-  useEffect(() => {
-    if (scanMsg) setLogs((prev) => [{ t: Date.now(), msg: scanMsg }, ...prev].slice(0, 8));
-  }, [scanMsg]);
+  
   useEffect(() => {
     if (discoMsg) setLogs((prev) => [{ t: Date.now(), msg: discoMsg }, ...prev].slice(0, 8));
     if (!discoMsg) return;
@@ -98,12 +91,10 @@ export function ControlsClient({ seed, refresh, scan, disco }: { seed: ServerAct
   const timeFmt = useMemo(() => new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }), []);
 
   return (
-    <div className="card" style={{ gridColumn: 'span 6' }}>
+    <div className="card" style={{ gridColumn: '1 / -1' }}>
       <h2>Controls</h2>
       <div className="row" style={{ marginBottom: 12 }}>
-        <form action={seedAction}><ActionButton label="Seed Games" /></form>
-        <form action={refreshAction}><ActionButton label="Refresh Games" /></form>
-        <form action={scanAction}><ActionButton label="Scan Games" /></form>
+        <form action={seedAction}><ActionButton label="Refresh Games" /></form>
         <form action={discoAction}><DiscoButton label="Disco" active={discoOn} cooldown={cooldown} /></form>
       </div>
       <div className="stack">
