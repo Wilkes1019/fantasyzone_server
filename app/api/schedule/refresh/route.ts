@@ -77,3 +77,7 @@ export async function POST() {
   return Response.json({ updated, deleted }, { headers: { 'cache-control': 'no-store' } });
 }
 
+export async function GET() {
+  return POST();
+}
+

@@ -1,0 +1,12 @@
+.git
+.gitignore
+.cursorignore
+.env
+.env.*
+node_modules
+.next
+dist
+build
+nfl_players_rosters_cleaned.csv
+**/*.log
+**/.DS_Store

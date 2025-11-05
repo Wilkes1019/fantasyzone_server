@@ -101,3 +101,7 @@ export async function POST() {
   return Response.json({ inserted, updated, deleted }, { headers: { 'cache-control': 'no-store' } });
 }
 
+export async function GET() {
+  return POST();
+}
+
