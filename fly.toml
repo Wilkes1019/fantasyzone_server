@@ -1,0 +1,17 @@
+app = "fantasyzone"
+primary_region = "lax"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[processes]
+  app = "npx tsx scripts/possession-poller.ts"
+
+# No [[services]] block on purpose (worker-only; no HTTP)
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+

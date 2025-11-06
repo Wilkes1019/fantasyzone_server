@@ -66,4 +66,3 @@ export async function GET(req: Request) {
   console.log('[API][watch] resp', body);
   return Response.json(body, { headers: { 'cache-control': 'no-store' } });
 }
-
