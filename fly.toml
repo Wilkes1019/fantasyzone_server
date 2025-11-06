@@ -1,4 +1,4 @@
-app = "fantasyzone"
+app = "fantasyzone-poller"
 primary_region = "lax"
 
 [build]
