@@ -120,7 +120,7 @@ Route handlers live in `app/api/**/route.ts`.
 - Path: `POST /api/live/possession`
 - Body: none
 - Effect: For games marked live or in the watch set, fetch ESPN scoreboard once and update Redis possession mapping for each game with current offense/defense. TTL controlled by `FZ_LIVE_TTL_SEC`.
- - Background option: run `npm run poller` to execute the same logic every ~1s without needing an external scheduler.
+ - Background worker: in production we rely on a dedicated worker (e.g., Fly) that runs the same logic every ~1s (`npm run poller`), so no separate 1-minute cron is used.
 
 ### Player Status
 - Path: `POST /api/player-status`
@@ -235,7 +235,7 @@ Defined in `vercel.json`:
 {
   "crons": [
     { "path": "/api/schedule/seed", "schedule": "0 9 * * *" },
-    
+    { "path": "/api/schedule/refresh", "schedule": "*/30 5-23 * * *" }
   ]
 }
 ```

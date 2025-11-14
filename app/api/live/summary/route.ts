@@ -8,6 +8,7 @@ import { games, players, teams } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { redis, keys } from '@/lib/redis';
 import { getDiscoGames, isDiscoEnabled } from '@/lib/disco';
+import { fetchPbp } from '@/lib/espn/pbp';
 
 const Body = z.object({
   playerIds: z.array(z.string().min(1)).min(1).max(200).optional(),
@@ -15,6 +16,14 @@ const Body = z.object({
 }).refine((val) => (Array.isArray(val.playerIds) && val.playerIds.length > 0) || (Array.isArray(val.playerNames) && val.playerNames.length > 0), {
   message: 'playerIds or playerNames is required',
 });
+
+function simpleHash(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h * 31 + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
@@ -61,6 +70,8 @@ export async function POST(req: Request) {
           away: { abbr: g.awayAbbr, name: teamRows.find((t) => t.abbr.toUpperCase() === g.awayAbbr.toUpperCase())?.name },
           network: g.network ?? null,
           status: 'live' as const,
+          redZone: Math.random() < 0.5,
+          lastPlayId: (simpleHash(g.eventId) % 1000) + Math.floor(Date.now() / 10000),
         }));
 
         const possessionEntries = await Promise.all(
@@ -196,7 +207,30 @@ export async function POST(req: Request) {
   );
   const filteredGames = gamesOut.filter((g) => relevantEventIds.has(g.eventId));
 
-  return Response.json({ games: filteredGames, playersByGame, notInGame }, { headers: { 'cache-control': 'no-store' } });
+  // Enrich with ESPN PBP redZone + lastPlayId
+  const pbpEntries = await Promise.all(
+    filteredGames.map(async (g) => {
+      try {
+        const pbp = await fetchPbp(g.eventId);
+        return [g.eventId, pbp] as const;
+      } catch {
+        return [g.eventId, null] as const;
+      }
+    })
+  );
+  const pbpByEvent = new Map<string, { lastPlayId: string | null; redZone: boolean } | null>(pbpEntries);
+  const enrichedGames = filteredGames.map((g) => {
+    const pbp = pbpByEvent.get(g.eventId);
+    const maybeNum = pbp?.lastPlayId != null ? Number(pbp.lastPlayId) : null;
+    const lastPlayId = maybeNum != null && Number.isFinite(maybeNum) ? maybeNum : null;
+    return {
+      ...g,
+      redZone: Boolean(pbp?.redZone),
+      lastPlayId,
+    };
+  });
+
+  return Response.json({ games: enrichedGames, playersByGame, notInGame }, { headers: { 'cache-control': 'no-store' } });
 }
 
 
