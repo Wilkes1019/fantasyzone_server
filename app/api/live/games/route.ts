@@ -6,7 +6,7 @@ import { games, teams } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { redis, keys } from '@/lib/redis';
 import { updateLivePossession } from '@/lib/live/possession';
-import { getDiscoGames, isDiscoEnabled } from '@/lib/disco';
+import { getDiscoGames, isDiscoEnabled, isGameRowLive } from '@/lib/disco';
 
 type LiveGameOut = {
   eventId: string;
@@ -30,11 +30,20 @@ export async function GET() {
       ? await db.select().from(games).where(inArray(games.eventId, watchIds))
       : [] as typeof dbLive;
     const seen = new Set<string>();
-    const live = [...dbLive, ...extraByWatch].filter((g) => {
+    const liveCandidates = [...dbLive, ...extraByWatch];
+    const live = liveCandidates.filter((g) => {
+      if (!isGameRowLive(g)) return false;
       if (seen.has(g.eventId)) return false;
       seen.add(g.eventId);
       return true;
     });
+
+    const staleWatchIds = extraByWatch
+      .filter((g) => !isGameRowLive(g))
+      .map((g) => g.eventId);
+    if (staleWatchIds.length > 0) {
+      await redis.srem(keys.watchSet, ...staleWatchIds);
+    }
 
     // If no real live games and Disco is enabled, return Disco games
     if (live.length === 0 && (await isDiscoEnabled())) {

@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
+    "tunnel": "lt --port 3000 --subdomain fantasyzone",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

@@ -1,7 +1,9 @@
 import { db } from '@/lib/db/drizzle';
 import { games as gamesTable, teams as teamsTable } from '@/lib/db/schema';
+import type { GameRow } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { redis, keys } from '@/lib/redis';
+import { flags } from '@/lib/env';
 
 export const DISCO_NETWORKS = ['ABC', 'CBS', 'ESPN', 'FOX', 'NBC', 'NFLN'] as const;
 export type DiscoNetwork = typeof DISCO_NETWORKS[number];
@@ -36,9 +38,18 @@ function coerceDiscoNetwork(n: unknown): DiscoNetwork {
   return getRandomDiscoNetwork();
 }
 
+const LIVE_ROW_STALE_MS = Math.max(flags.liveTtlSec, 60) * 1000;
+
+export function isGameRowLive(row: GameRow | null | undefined): boolean {
+  if (!row || row.status !== 'live') return false;
+  const updated = row.updatedAt ? new Date(row.updatedAt).getTime() : null;
+  if (!updated) return true;
+  return Date.now() - updated <= LIVE_ROW_STALE_MS;
+}
+
 export async function hasRealLiveGames(): Promise<boolean> {
   const live = await db.select().from(gamesTable).where(eq(gamesTable.status, 'live'));
-  return live.length > 0;
+  return live.some((row) => isGameRowLive(row));
 }
 
 export async function getDiscoGames(): Promise<DiscoGame[]> {
